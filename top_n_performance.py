@@ -19,8 +19,10 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
+import psycopg2
+from sqlalchemy import create_engine, text
 # import matplotlib.pyplot as plt
-from Symbols import nasdaq_symbols, SP_Symbols, DOWjones_symbols
+# from Symbols import nasdaq_symbols, SP_Symbols, DOWjones_symbols
 
 sp500_symbols = ['AAPL', 'MSFT', 'AMZN', 'NVDA', 'GOOGL', 'BRK.B', 'GOOG', 'TSLA', 'META', 'UNH', 'XOM', 'JNJ', 'JPM', 'V', 'PG', 'MA', 'HD', 'CVX', 'ABBV', 'MRK', 'LLY', 'AVGO', 'PEP', 'KO', 'PFE', 'TMO', 'COST', 'CSCO', 'MCD', 'WMT', 'BAC', 'CRM', 'DIS', 'ACN', 'LIN', 'ADBE', 'ABT', 'DHR', 'TXN', 'VZ', 'CMCSA', 'AMD', 'NEE', 'NKE', 'PM', 'BMY', 'NFLX', 'RTX', 'WFC', 'ORCL', 'UPS', 'QCOM', 'T', 'AMGN', 'HON', 'INTC', 'UNP', 'COP', 'INTU', 'IBM', 'BA', 'LOW', 'CAT', 'SBUX', 'MS', 'SPGI', 'ELV', 'GS', 'PLD', 'LMT', 'DE', 'MDT', 'GE', 'GILD', 'BKNG', 'AMAT', 'BLK', 'AXP', 'MDLZ', 'CVS', 'SYK', 'ADI', 'AMT', 'REGN', 'ADP', 'TJX', 'C', 'ISRG', 'NOW', 'TMUS', 'PGR', 'PYPL', 'SCHW', 'VRTX', 'MMC', 'MO', 'CB', 'ZTS', 'CI', 'SO', 'TGT', 'DUK', 'FISV', 'BSX', 'BDX', 'SLB', 'CME', 'NOC', 'ETN', 'LRCX', 'ITW', 'EOG', 'MU', 'AON', 'EQIX', 'CL', 'CSX', 'APD', 'HUM', 'ATVI', 'MPC', 'WM', 'SNPS', 'MMM', 'CDNS', 'EL', 'ICE', 'CCI', 'FCX', 'HCA', 'VLO', 'ORLY', 'KLAC', 'FDX', 'PNC', 'GD', 'GIS', 'SHW', 'EW', 'USB', 'MCK', 'MRNA', 'EMR', 'GM', 'PXD', 'NSC', 'DG', 'APH', 'MCO', 'PSX', 'ROP', 'CMG', 'SRE', 'MSI', 'AEP', 'D', 'F', 'OXY', 'AZO', 'NXPI', 'PSA', 'KMB', 'TFC', 'DXCM', 'MSCI', 'ADM', 'MAR', 'MCHP', 'ADSK', 'PH', 'TT', 'FTNT', 'CTVA', 'EXC', 'IDXX', 'JCI', 'ANET', 'ECL', 'TEL', 'AJG', 'MNST', 'A', 'BIIB', 'SYY', 'NEM', 'TRV', 'CTAS', 'O', 'NUE', 'CARR', 'PCAR', 'TDG', 'DOW', 'HSY', 'LHX', 'MET', 'CHTR', 'YUM', 'HES', 'AFL', 'ROST', 'XEL', 'STZ', 'HLT', 'AIG', 'IQV', 'WMB', 'PAYX', 'COF', 'CNC', 'OTIS', 'SPG', 'KMI', 'ILMN', 'ED', 'ON', 'MTD', 'WELL', 'CMI', 'AME', 'BK', 'WBD', 'DD', 'ROK', 'KR', 'AMP', 'VICI', 'DVN', 'CPRT', 'RMD', 'EA', 'GWW', 'KHC', 'CTSH', 'FAST', 'ODFL', 'FIS', 'DHI', 'PEG', 'DLTR', 'KDP', 'PPG', 'WEC', 'VRSK', 'APTV', 'PRU', 'HAL', 'ALL', 'GEHC', 'KEYS', 'ANSS', 'BKR', 'CSGP', 'AWK', 'OKE', 'ULTA', 'SBAC', 'RSG', 'ES', 'ZBH', 'ENPH', 'GPN', 'EIX', 'DLR', 'URI', 'LEN', 'STT', 'ABC', 'GLW', 'ALB', 'TSCO', 'PCG', 'CDW', 'WST', 'DFS', 'WTW', 'IT', 'ACGL', 'CEG', 'TROW', 'WBA', 'FANG', 'EFX', 'HPQ', 'FTV', 'PWR', 'EBAY', 'LYB', 'GPC', 'IFF', 'IR', 'VMC', 'ALGN', 'AVB', 'AEE', 'PODD', 'CBRE', 'MLM', 'ETR', 'HIG', 'MPWR', 'CHD', 'WY', 'FE', 'DAL', 'FSLR', 'DTE', 'MKC', 'EXR', 'DOV', 'MTB', 'BAX', 'TDY', 'PPL', 'HOLX', 'LH', 'CLX', 'HPE', 'EQR', 'CAH', 'CTRA', 'VRSN', 'DRI', 'ARE', 'STE', 'TTWO', 'LUV', 'STLD', 'SWKS', 'OMC', 'FITB', 'CNP', 'XYL', 'NDAQ', 'WAT', 'LVS', 'WAB', 'NTRS', 'RJF', 'CAG', 'CMS', 'COO', 'VTR', 'RF', 'CINF', 'FICO', 'INVH', 'K', 'TSN', 'SJM', 'IEX', 'EXPD', 'BALL', 'MAA', 'BR', 'AMCR', 'PFG', 'NVR', 'TER', 'PKI', 'EPAM', 'HBAN', 'TRGP', 'DGX', 'ATO', 'SEDG', 'MOH', 'FDS', 'AES', 'HWM', 'CFG', 'FMC', 'ZBRA', 'FLT', 'GRMN', 'MOS', 'MRO', 'BBY', 'J', 'TXT', 'IRM', 'LW', 'BG', 'MKTX', 'JBHT', 'AVY', 'LKQ', 'RE', 'CBOE', 'UAL', 'EXPE', 'CF', 'TYL', 'IPG', 'EVRG', 'RCL', 'MGM', 'PAYC', 'NTAP', 'PHM', 'ETSY', 'PTC', 'BRO', 'LNT', 'INCY', 'ESS', 'POOL', 'SNA', 'PKG', 'IP', 'WRB', 'TRMB', 'LDOS', 'SYF', 'AKAM', 'CTLT', 'STX', 'UDR', 'APA', 'DPZ', 'VTRS', 'TFX', 'KEY', 'NDSN', 'PEAK', 'CHRW', 'BF.B', 'BWA', 'HRL', 'SWK', 'TECH', 'EQT', 'WYNN', 'KIM', 'CPT', 'WDC', 'MTCH', 'CPB', 'NI', 'HST', 'JKHY', 'L', 'HSIC', 'MAS', 'PARA', 'JNPR', 'CDAY', 'CE', 'TPR', 'QRVO', 'FOXA', 'BIO', 'GL', 'EMN', 'CRL', 'TAP', 'LYV', 'GEN', 'KMX', 'CCL', 'CZR', 'ALLE', 'AAL', 'REG', 'PNR', 'AOS', 'PNW', 'BBWI', 'ROL', 'RHI', 'FFIV', 'HII', 'XRAY', 'UHS', 'NRG', 'BEN', 'WRK', 'BXP', 'IVZ', 'VFC', 'AAP', 'WHR', 'GNRC', 'FRT', 'SEE', 'NWSA', 'HAS', 'AIZ', 'CMA', 'OGN', 'DXC', 'NCLH', 'MHK', 'ALK', 'RL', 'ZION', 'NWL', 'DVA', 'FOX', 'LNC', 'FRC', 'DISH', 'NWS']
 nasdaq_symbols = ['ATVI', 'ADBE', 'ADP', 'ABNB', 'ALGN', 'GOOGL', 'GOOG', 'AMZN', 'AMD', 'AEP', 'AMGN', 'ADI', 'ANSS', 'AAPL', 'AMAT', 'ASML', 'AZN', 'TEAM', 'ADSK', 'BKR', 'BIIB', 'BKNG', 'AVGO', 'CDNS', 'CHTR', 'CTAS', 'CSCO', 'CTSH', 'CMCSA', 'CEG', 'CPRT', 'CSGP', 'COST', 'CRWD', 'CSX', 'DDOG', 'DXCM', 'FANG', 'DLTR', 'EBAY', 'EA', 'ENPH', 'EXC', 'FAST', 'FISV', 'FTNT', 'GILD', 'GFS', 'HON', 'IDXX', 'ILMN', 'INTC', 'INTU', 'ISRG', 'JD', 'KDP', 'KLAC', 'KHC', 'LRCX', 'LCID', 'LULU', 'MAR', 'MRVL', 'MELI', 'META', 'MCHP', 'MU', 'MSFT', 'MRNA', 'MDLZ', 'MNST', 'NFLX', 'NVDA', 'NXPI', 'ORLY', 'ODFL', 'PCAR', 'PANW', 'PAYX', 'PYPL', 'PDD', 'PEP', 'QCOM', 'REGN', 'RIVN', 'ROST', 'SGEN', 'SIRI', 'SBUX', 'SNPS', 'TMUS', 'TSLA', 'TXN', 'VRSK', 'VRTX', 'WBA', 'WBD', 'WDAY', 'XEL', 'ZM', 'ZS']
@@ -105,51 +107,43 @@ def get_relevant(df, c_constituents, check_date):
   
     return index_constituents
 
-def create_database():
-    # Connect to the database
-    conn = sqlite3.connect('stock_data.db')
-    c = conn.cursor()
 
-    # Create tables for each index
-    for index in ['nasdaq', 'sp500', 'dowjones']:
-        c.execute(f'''CREATE TABLE IF NOT EXISTS {index}_data
-                    (ticker TEXT, date DATE, adj_close REAL)''')
+# def store_data(tickers, index):
+#     # Connect to the database
+#     conn = sqlite3.connect('stock_data.db')
+#     c = conn.cursor()
 
-    # Commit the changes to the database and close the connection
-    conn.commit()
-    conn.close()
+#     # Loop through the tickers and download the price data
+#     for ticker in tickers:
+#         data = yf.download(ticker, start='1997-01-01')
 
-def store_data(tickers, index):
-    # Connect to the database
-    conn = sqlite3.connect('stock_data.db')
-    c = conn.cursor()
+#         # Extract the relevant columns
+#         data = data[['Adj Close']]
+#         # Reset the index and rename the columns
+#         data.reset_index(inplace=True)
+#         data = data.rename(columns={'Adj Close': 'adj_close'})
+#         data['ticker'] = ticker
 
-    # Loop through the tickers and download the price data
-    for ticker in tickers:
-        data = yf.download(ticker, start='1997-01-01')
+#         # Insert the data into the database
+#         data.to_sql(f'{index}_data', conn, if_exists='append', index=False)
 
-        # Extract the relevant columns
-        data = data[['Adj Close']]
-        # Reset the index and rename the columns
-        data.reset_index(inplace=True)
-        data = data.rename(columns={'Adj Close': 'adj_close'})
-        data['ticker'] = ticker
+#     # Commit the changes to the database and close the connection
+#     conn.commit()
+#     conn.close()
 
-        # Insert the data into the database
-        data.to_sql(f'{index}_data', conn, if_exists='append', index=False)
-
-    # Commit the changes to the database and close the connection
-    conn.commit()
-    conn.close()
 
 @st.cache_data
-def retrieve_data(index, start_date, end_date):
-    # Connect to the database
-    conn = sqlite3.connect('stock_data.db')
-      
+def retrieve_data(index):
+    # Create the connection string
+    conn_string = f"postgresql://postgres:paxxcode7890@192.168.1.109/stock_data"
+
+    # Connect to the database using SQLAlchemy
+    engine = create_engine(conn_string)
+    conn = engine.connect()
+    
     # Query the data from the database
-    query = f"SELECT date, ticker, adj_close FROM {index}_data WHERE date BETWEEN ? AND ?"
-    data = pd.read_sql_query(query, conn, params=(start_date, end_date))
+    query = text(f"SELECT date, ticker, adj_close FROM {index}_data")
+    data = pd.read_sql_query(query, conn)
 
     # Set the date column as the index
     data.set_index('date', inplace=True)
@@ -165,37 +159,6 @@ def retrieve_data(index, start_date, end_date):
 
     return data
 
-
-def delete_data(table_name):
-    # Connect to the database
-    conn = sqlite3.connect('stock_data.db')
-    c = conn.cursor()
-
-    # Execute the SQL statement to clear the table
-    c.execute(f'DELETE FROM {table_name}')
-
-    # Commit the changes and close the connection
-    conn.commit()
-    conn.close()
-
-def delete_all_tables_data(db_file):
-    # Connect to the database
-    conn = sqlite3.connect(db_file)
-    c = conn.cursor()
-    
-    # Get a list of all tables in the database
-    c.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    tables = c.fetchall()
-    
-    # Delete all data from each table
-    for table in tables:
-        c.execute(f"DELETE FROM {table[0]};")
-    
-    # Commit the changes and close the connection
-    conn.commit()
-    conn.close()
-
-# delete_all_tables_data('/content/drive/MyDrive/Colab Notebooks/.db')
 
 
 @st.cache_data
